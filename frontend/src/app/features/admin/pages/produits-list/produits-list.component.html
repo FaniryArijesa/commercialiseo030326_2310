@@ -1,0 +1,547 @@
+<div class="page-container">
+
+  <!-- Header avec titre et breadcrumbs -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Liste des Produits</h1>
+      <nav class="breadcrumbs">
+        <a>Admin</a>
+        <span class="separator">></span>
+        <span class="current">Produits</span>
+      </nav>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()" [disabled]="isLoading">
+        <i class="fas fa-plus"></i>
+        Ajouter un Produit
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State pour les Stats - SKELETON VERT BRILLANT -->
+  <div class="stats-grid stats-skeleton" *ngIf="isLoading">
+    <div class="stat-card skeleton-card" *ngFor="let i of [1,2,3,4]">
+      <div class="skeleton-icon-shine">
+        <div class="shine-effect"></div>
+      </div>
+      <div class="stat-content">
+        <div class="skeleton-text-shine skeleton-value"></div>
+        <div class="skeleton-text-shine skeleton-label-sm"></div>
+        <div class="skeleton-text-shine skeleton-evolution"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STATS ADMIN DASHBOARD ==================== -->
+  <div class="admin-dashboard" *ngIf="!isLoading">
+
+    <!-- RANGÉE 1 : KPIs principaux avec mini-barres de progression -->
+    <div class="dashboard-row dashboard-row--kpis">
+
+      <!-- Total produits -->
+      <div class="kpi-card kpi-card--primary">
+        <div class="kpi-card__header">
+          <div class="kpi-card__icon"><i class="fas fa-boxes"></i></div>
+          <span class="kpi-card__trend kpi-card__trend--up">
+            <i class="fas fa-arrow-up"></i> {{ statsAdmin.pctEnStock }}% sains
+          </span>
+        </div>
+        <div class="kpi-card__value">{{ statsAdmin.total }}</div>
+        <div class="kpi-card__label">Total Produits</div>
+        <div class="kpi-card__progress">
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill kpi-progress-fill--primary" [style.width.%]="100"></div>
+          </div>
+          <div class="kpi-card__sub">{{ statsAdmin.nbCategories }} catégories · {{ statsAdmin.totalStock }} unités en stock</div>
+        </div>
+      </div>
+
+      <!-- En Stock -->
+      <div class="kpi-card kpi-card--success">
+        <div class="kpi-card__header">
+          <div class="kpi-card__icon"><i class="fas fa-check-circle"></i></div>
+          <span class="kpi-card__trend kpi-card__trend--up">
+            <i class="fas fa-arrow-up"></i> {{ statsAdmin.pctEnStock }}%
+          </span>
+        </div>
+        <div class="kpi-card__value">{{ statsAdmin.enStock }}</div>
+        <div class="kpi-card__label">En Stock Normal</div>
+        <div class="kpi-card__progress">
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill kpi-progress-fill--success" [style.width.%]="statsAdmin.pctEnStock"></div>
+          </div>
+          <div class="kpi-card__sub">{{ statsAdmin.pctEnStock }}% du catalogue disponible</div>
+        </div>
+      </div>
+
+      <!-- Stock Faible -->
+      <div class="kpi-card kpi-card--warning">
+        <div class="kpi-card__header">
+          <div class="kpi-card__icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <span class="kpi-card__trend kpi-card__trend--warn" *ngIf="statsAdmin.stockFaible > 0">
+            <i class="fas fa-bell"></i> Alerte
+          </span>
+        </div>
+        <div class="kpi-card__value">{{ statsAdmin.stockFaible }}</div>
+        <div class="kpi-card__label">Stock Faible (≤10)</div>
+        <div class="kpi-card__progress">
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill kpi-progress-fill--warning" [style.width.%]="statsAdmin.pctStockFaible"></div>
+          </div>
+          <div class="kpi-card__sub">{{ statsAdmin.pctStockFaible }}% du catalogue à surveiller</div>
+        </div>
+      </div>
+
+      <!-- Rupture -->
+      <div class="kpi-card kpi-card--danger">
+        <div class="kpi-card__header">
+          <div class="kpi-card__icon"><i class="fas fa-times-circle"></i></div>
+          <span class="kpi-card__trend kpi-card__trend--danger" *ngIf="statsAdmin.rupture > 0">
+            <i class="fas fa-exclamation"></i> Critique
+          </span>
+        </div>
+        <div class="kpi-card__value">{{ statsAdmin.rupture }}</div>
+        <div class="kpi-card__label">Rupture de Stock</div>
+        <div class="kpi-card__progress">
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill kpi-progress-fill--danger" [style.width.%]="statsAdmin.pctRupture"></div>
+          </div>
+          <div class="kpi-card__sub">{{ statsAdmin.pctRupture }}% du catalogue en rupture</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RANGÉE 2 : Barre de santé globale + métriques secondaires -->
+    <div class="dashboard-row dashboard-row--health">
+
+      <!-- Barre de santé -->
+      <div class="health-panel">
+        <div class="health-panel__header">
+          <div class="health-panel__title">
+            <i class="fas fa-heartbeat"></i> Santé du catalogue
+          </div>
+          <div class="health-panel__score" [class.score--good]="statsAdmin.scoresSante >= 70" [class.score--warn]="statsAdmin.scoresSante >= 40 && statsAdmin.scoresSante < 70" [class.score--bad]="statsAdmin.scoresSante < 40">
+            {{ statsAdmin.scoresSante }}/100
+          </div>
+        </div>
+        <div class="health-bar-stacked">
+          <div class="hbs-segment hbs-segment--good"   [style.width.%]="statsAdmin.pctEnStock"     [title]="statsAdmin.enStock + ' en stock'"></div>
+          <div class="hbs-segment hbs-segment--warn"   [style.width.%]="statsAdmin.pctStockFaible" [title]="statsAdmin.stockFaible + ' stock faible'"></div>
+          <div class="hbs-segment hbs-segment--danger" [style.width.%]="statsAdmin.pctRupture"     [title]="statsAdmin.rupture + ' en rupture'"></div>
+        </div>
+        <div class="health-bar-legend">
+          <span class="hbl-item hbl-item--good">  <span class="hbl-dot"></span> En stock ({{ statsAdmin.pctEnStock }}%)</span>
+          <span class="hbl-item hbl-item--warn">  <span class="hbl-dot"></span> Stock faible ({{ statsAdmin.pctStockFaible }}%)</span>
+          <span class="hbl-item hbl-item--danger"><span class="hbl-dot"></span> Rupture ({{ statsAdmin.pctRupture }}%)</span>
+        </div>
+
+        <!-- Mini métriques en grille -->
+        <div class="health-metrics-grid">
+          <div class="hm-item">
+            <span class="hm-label">Taux disponibilité</span>
+            <span class="hm-value hm-value--good">{{ statsAdmin.pctEnStock }}%</span>
+          </div>
+          <div class="hm-item">
+            <span class="hm-label">Produits actifs</span>
+            <span class="hm-value">{{ statsAdmin.enStock + statsAdmin.stockFaible }}</span>
+          </div>
+          <div class="hm-item">
+            <span class="hm-label">Moy. stock / produit</span>
+            <span class="hm-value">{{ statsAdmin.moyenneStock }}</span>
+          </div>
+          <div class="hm-item">
+            <span class="hm-label">Stock max</span>
+            <span class="hm-value">{{ statsAdmin.stockMax }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Catégories par nb produits (mini bar chart CSS) -->
+      <div class="chart-panel">
+        <div class="chart-panel__header">
+          <i class="fas fa-th-large"></i> Répartition par catégorie
+          <span class="chart-panel__count">{{ statsAdmin.nbCategories }} cat.</span>
+        </div>
+        <div class="bar-chart">
+          <div class="bar-chart__row" *ngFor="let cat of statsAdmin.topCategories">
+            <div class="bc-label" [title]="cat.nom">{{ cat.nom }}</div>
+            <div class="bc-bar-track">
+              <div class="bc-bar-fill" [style.width.%]="cat.pct" [title]="cat.count + ' produits'">
+                <span class="bc-bar-value" *ngIf="cat.pct > 15">{{ cat.count }}</span>
+              </div>
+              <span class="bc-bar-value-out" *ngIf="cat.pct <= 15">{{ cat.count }}</span>
+            </div>
+            <div class="bc-pct">{{ cat.pct }}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distribution stock (mini donut visuel CSS) -->
+      <div class="dist-panel">
+        <div class="dist-panel__header">
+          <i class="fas fa-chart-pie"></i> Distribution du stock
+        </div>
+
+        <div class="dist-donut-wrap">
+          <div class="dist-donut">
+            <svg viewBox="0 0 36 36" class="donut-svg">
+              <!-- Track -->
+              <circle class="donut-track" cx="18" cy="18" r="15.915" />
+              <!-- En stock (vert) -->
+              <circle class="donut-seg donut-seg--good" cx="18" cy="18" r="15.915"
+                      [attr.stroke-dasharray]="statsAdmin.pctEnStock + ' ' + (100 - statsAdmin.pctEnStock)"
+                      stroke-dashoffset="25" />
+              <!-- Stock faible (jaune) -->
+              <circle class="donut-seg donut-seg--warn" cx="18" cy="18" r="15.915"
+                      [attr.stroke-dasharray]="statsAdmin.pctStockFaible + ' ' + (100 - statsAdmin.pctStockFaible)"
+                      [attr.stroke-dashoffset]="100 - statsAdmin.pctEnStock + 25" />
+              <!-- Rupture (rouge) -->
+              <circle class="donut-seg donut-seg--danger" cx="18" cy="18" r="15.915"
+                      [attr.stroke-dasharray]="statsAdmin.pctRupture + ' ' + (100 - statsAdmin.pctRupture)"
+                      [attr.stroke-dashoffset]="100 - statsAdmin.pctEnStock - statsAdmin.pctStockFaible + 25" />
+            </svg>
+            <div class="donut-center">
+              <span class="donut-center-value">{{ statsAdmin.total }}</span>
+              <span class="donut-center-label">produits</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dist-legend">
+          <div class="dist-legend-item dist-legend-item--good">
+            <span class="dl-dot"></span>
+            <span class="dl-label">En stock</span>
+            <span class="dl-value">{{ statsAdmin.enStock }}</span>
+          </div>
+          <div class="dist-legend-item dist-legend-item--warn">
+            <span class="dl-dot"></span>
+            <span class="dl-label">Stock faible</span>
+            <span class="dl-value">{{ statsAdmin.stockFaible }}</span>
+          </div>
+          <div class="dist-legend-item dist-legend-item--danger">
+            <span class="dl-dot"></span>
+            <span class="dl-label">Rupture</span>
+            <span class="dl-value">{{ statsAdmin.rupture }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RANGÉE 3 : Métriques secondaires en ligne -->
+    <div class="dashboard-row dashboard-row--metrics">
+
+      <div class="metric-chip metric-chip--blue">
+        <i class="fas fa-layer-group"></i>
+        <div class="mc-body">
+          <span class="mc-value">{{ statsAdmin.nbCategories }}</span>
+          <span class="mc-label">Catégories actives</span>
+        </div>
+      </div>
+
+      <div class="metric-chip metric-chip--teal">
+        <i class="fas fa-cubes"></i>
+        <div class="mc-body">
+          <span class="mc-value">{{ statsAdmin.totalStock }}</span>
+          <span class="mc-label">Unités totales en stock</span>
+        </div>
+      </div>
+
+      <div class="metric-chip metric-chip--purple">
+        <i class="fas fa-chart-bar"></i>
+        <div class="mc-body">
+          <span class="mc-value">{{ statsAdmin.moyenneStock }}</span>
+          <span class="mc-label">Moy. unités / produit</span>
+        </div>
+      </div>
+
+      <div class="metric-chip metric-chip--indigo">
+        <i class="fas fa-crown"></i>
+        <div class="mc-body">
+          <span class="mc-value mc-value--text">{{ statsAdmin.topCategories[0]?.nom || '-' }}</span>
+          <span class="mc-label">Top catégorie</span>
+        </div>
+      </div>
+
+      <div class="metric-chip" [class.metric-chip--danger]="statsAdmin.rupture > 0" [class.metric-chip--success]="statsAdmin.rupture === 0">
+        <i class="fas" [class.fa-exclamation-circle]="statsAdmin.rupture > 0" [class.fa-shield-alt]="statsAdmin.rupture === 0"></i>
+        <div class="mc-body">
+          <span class="mc-value">{{ statsAdmin.rupture > 0 ? statsAdmin.rupture + ' alertes' : 'Aucune' }}</span>
+          <span class="mc-label">Ruptures actives</span>
+        </div>
+      </div>
+
+      <div class="metric-chip metric-chip--orange">
+        <i class="fas fa-arrow-trend-up"></i>
+        <div class="mc-body">
+          <span class="mc-value">{{ statsAdmin.stockMax }}</span>
+          <span class="mc-label">Stock maximum (un produit)</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+  <!-- ==================== FIN STATS ADMIN DASHBOARD ==================== -->
+
+  <!-- Section Filtres et Tableau -->
+  <div class="content-card">
+
+    <!-- Barre d'outils -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            placeholder="Rechercher un produit..."
+            [(ngModel)]="recherche"
+            (input)="appliquerFiltres()"
+            [disabled]="isLoading">
+        </div>
+
+        <div class="filter-group">
+          <select [(ngModel)]="filtreStatut" (change)="appliquerFiltres()" [disabled]="isLoading">
+            <option value="tous">Tous les statuts</option>
+            <option value="en_stock">En Stock</option>
+            <option value="stock_faible">Stock Faible</option>
+            <option value="rupture">Rupture</option>
+          </select>
+
+          <select [(ngModel)]="filtreCategorie" (change)="appliquerFiltres()" [disabled]="isLoading">
+            <option value="toutes">Toutes les catégories</option>
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <span class="selection-info" *ngIf="produitsSelectionnes.length > 0 && !isLoading">
+          {{ produitsSelectionnes.length }} sélectionné(s)
+        </span>
+        <button class="btn btn-secondary" (click)="exporterProduits()" [disabled]="produitsSelectionnes.length === 0 || isLoading">
+          <i class="fas fa-download"></i>
+          Exporter
+        </button>
+      </div>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div class="error-container" *ngIf="errorMessage && !isLoading">
+      <div class="error-icon">
+        <i class="fas fa-exclamation-circle"></i>
+      </div>
+      <p class="error-text">{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="retryLoad()">
+        <i class="fas fa-redo"></i>
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Table Skeleton Loading VERT BRILLANT -->
+    <div class="table-skeleton-container" *ngIf="isLoading">
+      <!-- Header Skeleton -->
+      <div class="skeleton-table-header">
+        <div class="skeleton-header-cell" *ngFor="let header of ['', '', '', '', '', '', '', '']">
+          <div class="skeleton-shimmer"></div>
+        </div>
+      </div>
+
+      <!-- Rows Skeleton -->
+      <div class="skeleton-table-body">
+        <div class="skeleton-row-animated" *ngFor="let row of skeletonRows; let i = index" [style.animation-delay.ms]="i * 100">
+          <div class="skeleton-cell-animated skeleton-checkbox-cell">
+            <div class="skeleton-box-shine"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-code-cell">
+            <div class="skeleton-line-shine short"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-product-cell">
+            <div class="skeleton-avatar-shine"></div>
+            <div class="skeleton-lines-group">
+              <div class="skeleton-line-shine"></div>
+              <div class="skeleton-line-shine small"></div>
+            </div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-category-cell">
+            <div class="skeleton-badge-shine"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-quantity-cell">
+            <div class="skeleton-line-shine tiny"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-status-cell">
+            <div class="skeleton-status-shine"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-date-cell">
+            <div class="skeleton-line-shine medium"></div>
+          </div>
+          <div class="skeleton-cell-animated skeleton-actions-cell">
+            <div class="skeleton-action-shine"></div>
+            <div class="skeleton-action-shine"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Skeleton -->
+      <div class="skeleton-pagination">
+        <div class="skeleton-pagination-left">
+          <div class="skeleton-line-shine small"></div>
+          <div class="skeleton-line-shine medium"></div>
+        </div>
+        <div class="skeleton-pagination-right">
+          <div class="skeleton-page-shine" *ngFor="let p of [1,2,3,4,5]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau des produits -->
+    <div class="table-container" *ngIf="!isLoading && !errorMessage">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th class="col-checkbox">
+            <input
+              type="checkbox"
+              [(ngModel)]="selectionnerTous"
+              (change)="toggleSelectionTous()">
+          </th>
+          <th class="col-code">Code</th>
+          <th class="col-produit">Produit</th>
+          <th class="col-categorie">Catégorie</th>
+          <th class="col-quantite">Qté</th>
+          <th class="col-statut">Statut</th>
+          <th class="col-date">Date Création</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let produit of produitsPagines" [class.selected]="estSelectionne(produit._id!)">
+          <td class="col-checkbox">
+            <input
+              type="checkbox"
+              [checked]="estSelectionne(produit._id!)"
+              (change)="toggleSelectionProduit(produit._id!)">
+          </td>
+          <td class="col-code">
+            <span class="code-badge">{{ produit.product.code }}</span>
+          </td>
+          <td class="col-produit">
+            <div class="produit-info">
+              <div class="produit-avatar" *ngIf="produit.product.image; else noImage">
+                <img [src]="produit.product.image" [alt]="produit.product.name" class="produit-image">
+              </div>
+              <ng-template #noImage>
+                <div class="produit-avatar">
+                  <i class="fas fa-box"></i>
+                </div>
+              </ng-template>
+              <div class="produit-details">
+                <span class="produit-nom">{{ produit.product.name }}</span>
+              </div>
+            </div>
+          </td>
+          <td class="col-categorie">
+            <span class="categorie-badge">{{ produit.category.name }}</span>
+          </td>
+          <td class="col-quantite">
+            <span class="quantite" [class.faible]="produit.quantity <= 10">{{ produit.quantity || 0 }}</span>
+          </td>
+          <td class="col-statut">
+              <span class="statut-badge" [class]="getClasseStatut(getStatutFromQuantite(produit.quantity))">
+                {{ getLabelStatut(getStatutFromQuantite(produit.quantity)) }}
+              </span>
+          </td>
+          <td class="col-date">{{ produit.product.releaseDate | date:'dd/MM/yyyy' }}</td>
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button class="btn-action btn-edit" title="Modifier">
+                <i class="fas fa-pen"></i>
+              </button>
+              <button class="btn-action btn-delete" (click)="supprimerProduit(produit._id!)" title="Supprimer">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- État vide -->
+        <tr *ngIf="produitsPagines.length === 0" class="empty-row">
+          <td colspan="9">
+            <div class="empty-state">
+              <i class="fas fa-box-open"></i>
+              <p>Aucun produit trouvé</p>
+              <span>Essayez de modifier vos filtres de recherche</span>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" *ngIf="!isLoading && !errorMessage && totalPages > 0">
+      <div class="pagination-left">
+        <div class="items-per-page">
+          <label>Afficher :</label>
+          <select [(ngModel)]="itemsParPage" (change)="onItemsParPageChange()">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+            <option [value]="100">100</option>
+          </select>
+          <span>par page</span>
+        </div>
+        <div class="pagination-info">
+          {{ getPaginationInfo() }}
+        </div>
+      </div>
+
+      <div class="pagination-controls" *ngIf="totalPages > 1">
+        <button
+          class="btn-page btn-first"
+          [disabled]="pageActuelle === 1"
+          (click)="changerPage(1)"
+          title="Première page">
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+
+        <button
+          class="btn-page btn-prev"
+          [disabled]="pageActuelle === 1"
+          (click)="changerPage(pageActuelle - 1)"
+          title="Page précédente">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <ng-container *ngFor="let page of getPagesVisibles()">
+          <button
+            *ngIf="page !== -1"
+            class="btn-page"
+            [class.active]="pageActuelle === page"
+            (click)="changerPage(page)">
+            {{ page }}
+          </button>
+          <span *ngIf="page === -1" class="page-ellipsis">...</span>
+        </ng-container>
+
+        <button
+          class="btn-page btn-next"
+          [disabled]="pageActuelle === totalPages"
+          (click)="changerPage(pageActuelle + 1)"
+          title="Page suivante">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <button
+          class="btn-page btn-last"
+          [disabled]="pageActuelle === totalPages"
+          (click)="changerPage(totalPages)"
+          title="Dernière page">
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
