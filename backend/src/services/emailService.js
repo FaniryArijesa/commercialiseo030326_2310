@@ -3,70 +3,68 @@
  * Utilise le pattern Singleton pour éviter la création multiple de transports
  */
 
-//const nodemailer = require('nodemailer');
-
+const nodemailer = require('nodemailer');
 const { AUTH_MESSAGES } = require('../constants/messages');
 const ApiError = require('../utils/ApiError');
 const { HTTP_STATUS } = require('../constants/httpStatus');
-const { Resend } = require('resend');
+
 
 class EmailService {
   constructor() {
     this.transporter = null;
     this.initializeTransporter();
   }
-
-  async sendEmail({ to, subject, text, html }) {
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_RESEND_USER) {
-      throw new ApiError(
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        'Service email Resend non configuré'
-      );
-    }
-
-    if (!to || !subject || (!text && !html)) {
-      throw new ApiError(
-        HTTP_STATUS.BAD_REQUEST,
-        'Paramètres email incomplets'
-      );
-    }
-
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const mailOptions = {
-      from: `"Commercialiseo" <${process.env.EMAIL_RESEND_USER}>`,
-      to,
-      subject,
-      text,
-      html,
-    };
-
-    try {
-      const result = await resend.emails.send(mailOptions);
-      console.log(JSON.stringify(result));
-      console.log(`📧 Email envoyé à ${to}: ${result.id}`);
-      return result;
-    } catch (error) {
-      console.error('❌ Erreur envoi email (Resend):', error.message);
-      throw new ApiError(
-        HTTP_STATUS.BAD_REQUEST,
-        AUTH_MESSAGES.EMAIL_SEND_ERROR
-      );
-    }
-  }
+  //
+  // async sendWithResend({ to, subject, text, html }) {
+  //   if (!process.env.RESEND_API_KEY || !process.env.EMAIL_RESEND_USER) {
+  //     throw new ApiError(
+  //         HTTP_STATUS.INTERNAL_SERVER_ERROR,
+  //         'Service email Resend non configuré'
+  //     );
+  //   }
+  //
+  //   if (!to || !subject || (!text && !html)) {
+  //     throw new ApiError(
+  //         HTTP_STATUS.BAD_REQUEST,
+  //         'Paramètres email incomplets'
+  //     );
+  //   }
+  //
+  //   const resend = new Resend(process.env.RESEND_API_KEY);
+  //
+  //   const mailOptions = {
+  //     from: `"Commercialiseo" <${process.env.EMAIL_RESEND_USER}>`,
+  //     to,
+  //     subject,
+  //     text,
+  //     html,
+  //   };
+  //
+  //   try {
+  //     const result = await resend.emails.send(mailOptions);
+  //     console.log(`📧 Email envoyé à ${to}: ${result.id}`);
+  //     return result;
+  //   } catch (error) {
+  //     console.error('❌ Erreur envoi email (Resend):', error.message);
+  //     throw new ApiError(
+  //         HTTP_STATUS.BAD_REQUEST,
+  //         AUTH_MESSAGES.EMAIL_SEND_ERROR
+  //     );
+  //   }
+  // }
 
 
   /**
    * Initialise le transporteur nodemailer
    */
   initializeTransporter() {
-    /*console.log('Initialize transporter');
+    console.log('Initialize transporter');
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.warn('⚠️ Configuration email manquante. Les emails ne seront pas envoyés.');
       return;
     }
     console.log('Creating transporter');
-    this.transporter = nodemailer.createTransport({
+    this.transporter  = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
@@ -75,14 +73,14 @@ class EmailService {
     });
 
     // Vérifier la connexion au démarrage
-    this.verifyConnection();*/
+    this.verifyConnection();
   }
 
   /**
    * Vérifie la connexion au serveur SMTP
    */
   async verifyConnection() {
-    /*if (!this.transporter) return false;
+    if (!this.transporter) return false;
 
     try {
       await this.transporter.verify();
@@ -91,9 +89,7 @@ class EmailService {
     } catch (error) {
       console.error('❌ Erreur connexion serveur email:', error.message);
       return false;
-    }*/
-
-    return false;
+    }
   }
 
   /**
@@ -105,7 +101,7 @@ class EmailService {
    * @param {string} [options.html] - Contenu HTML
    * @returns {Promise<Object>} Résultat de l'envoi
    */
-  /*async sendEmail({ to, subject, text, html }) {
+  async sendEmail({ to, subject, text, html }) {
     if (!this.transporter) {
       throw new ApiError(
         HTTP_STATUS.INTERNAL_SERVER_ERROR,
@@ -139,8 +135,7 @@ class EmailService {
         AUTH_MESSAGES.EMAIL_SEND_ERROR
       );
     }
-    return null
-  }*/
+  }
 
   /**
    * Envoie un email de vérification avec code
